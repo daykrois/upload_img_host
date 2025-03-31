@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 安装 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      # 安装 pnpm
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      # 缓存依赖
+      - name: Cache PNPM modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 2. 安装依赖（使用 pnpm）
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile # 强制使用 lock 文件
+
+      # 3. 构建项目
+      - name: Build project
+        run: pnpm run build
+
+      # 4. 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist # Vue 打包目录
